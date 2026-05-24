@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Customer & Purchase Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f5f4f0; --surface: #ffffff; --surface2: #f0efe9;
+    --border: #e2e0d8; --border2: #cccab8;
+    --text: #1a1916; --text2: #6b6960; --text3: #9b9890;
+    --accent: #2d5a27; --accent-light: #e8f2e6; --accent-text: #1e3d1a;
+    --danger: #b33a2a; --danger-light: #fdf0ee;
+    --warning: #8a5c0a; --warning-light: #fdf6e8;
+    --info: #1d4e7a; --info-light: #e8f0f8;
+    --orange: #b84f0a; --orange-light: #fdf2ec;
+    --mono: 'DM Mono', monospace; --sans: 'DM Sans', sans-serif;
+    --radius: 10px; --radius-lg: 14px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.04);
+  }
+  body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; font-size: 15px; line-height: 1.6; }
+
+  /* CONFIG BANNER */
+  #config-banner { background: var(--warning-light); border-bottom: 1px solid #e5c97a; padding: 12px 24px; display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--warning); }
+  #config-banner.hidden { display: none; }
+  #config-banner a { color: var(--warning); font-weight: 600; }
+
+  /* NAV */
+  nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; display: flex; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: var(--shadow); flex-wrap: wrap; }
+  .nav-brand { font-weight: 600; font-size: 16px; color: var(--accent); padding: 16px 0; margin-right: 24px; display: flex; align-items: center; gap: 8px; }
+  .nav-brand svg { width: 20px; height: 20px; }
+  .nav-tabs { display: flex; gap: 0; flex: 1; flex-wrap: wrap; }
+  .nav-tab { padding: 16px 16px; font-size: 13.5px; font-weight: 500; color: var(--text2); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; background: none; border-top: none; border-left: none; border-right: none; font-family: var(--sans); white-space: nowrap; }
+  .nav-tab:hover { color: var(--text); }
+  .nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .nav-badge { background: var(--accent-light); color: var(--accent-text); font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 20px; margin-left: 5px; font-family: var(--mono); }
+
+  /* LAYOUT */
+  main { max-width: 960px; margin: 0 auto; padding: 32px 24px; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* PAGE HEADER */
+  .page-header { margin-bottom: 28px; }
+  .page-header h1 { font-size: 24px; font-weight: 600; }
+  .page-header p { font-size: 14px; color: var(--text2); margin-top: 4px; }
+
+  /* CARD */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; box-shadow: var(--shadow); margin-bottom: 20px; }
+  .card-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text3); margin-bottom: 16px; }
+
+  /* FORM */
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.full { grid-column: 1 / -1; }
+  label { font-size: 13px; font-weight: 500; color: var(--text2); }
+  input, select, textarea { font-family: var(--sans); font-size: 14px; padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); transition: border-color 0.15s, box-shadow 0.15s; outline: none; width: 100%; }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(45,90,39,0.1); }
+  .field-error { font-size: 12px; color: var(--danger); margin-top: 2px; display: none; }
+  .field-error.show { display: block; }
+
+  /* CURRENCY INPUT */
+  .currency-wrap { position: relative; }
+  .currency-wrap input { padding-left: 34px; }
+  .currency-prefix { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 14px; color: var(--text2); font-family: var(--mono); pointer-events: none; }
+
+  /* BUTTONS */
+  .btn { display: inline-flex; align-items: center; gap: 7px; font-family: var(--sans); font-size: 14px; font-weight: 500; padding: 9px 18px; border-radius: var(--radius); border: 1px solid transparent; cursor: pointer; transition: all 0.15s; }
+  .btn-primary { background: var(--accent); color: white; border-color: var(--accent); }
+  .btn-primary:hover { background: var(--accent-text); }
+  .btn-ghost { background: transparent; color: var(--text2); border-color: var(--border); }
+  .btn-ghost:hover { background: var(--surface2); color: var(--text); }
+  .btn-danger-ghost { background: transparent; color: var(--danger); border-color: #e8c0b9; }
+  .btn-danger-ghost:hover { background: var(--danger-light); }
+  .btn-info { background: var(--info); color: white; border-color: var(--info); }
+  .btn-info:hover { background: #163d60; }
+  .btn-sm { padding: 5px 12px; font-size: 13px; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* ALERT */
+  .alert { padding: 11px 14px; border-radius: var(--radius); font-size: 13px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; font-weight: 500; }
+  .alert-success { background: var(--accent-light); color: var(--accent-text); border: 1px solid #c0dab8; }
+  .alert-error { background: var(--danger-light); color: var(--danger); border: 1px solid #f0c4bc; }
+  .alert.hidden { display: none; }
+
+  /* TABLE */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  thead th { text-align: left; padding: 10px 14px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text3); border-bottom: 1px solid var(--border); background: var(--surface2); }
+  tbody td { padding: 12px 14px; border-bottom: 1px solid var(--border); color: var(--text); }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--surface2); }
+  .mono { font-family: var(--mono); font-size: 13px; }
+
+  /* EMPTY STATE */
+  .empty { text-align: center; padding: 48px 0; color: var(--text3); }
+  .empty svg { margin: 0 auto 12px; display: block; opacity: 0.35; }
+  .empty p { font-size: 14px; }
+
+  /* PURCHASE ITEMS TABLE */
+  .items-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 12px; }
+  .items-table th { background: var(--surface2); padding: 8px 10px; font-size: 12px; font-weight: 600; color: var(--text3); text-align: left; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid var(--border); }
+  .items-table td { padding: 8px 6px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .items-table td input { padding: 7px 9px; font-size: 13px; }
+  .items-table tr:last-child td { border-bottom: none; }
+  .total-row { display: flex; justify-content: flex-end; align-items: center; gap: 16px; padding: 12px 0 4px; border-top: 1px solid var(--border); margin-top: 4px; }
+  .total-label { font-size: 14px; color: var(--text2); font-weight: 500; }
+  .total-value { font-family: var(--mono); font-size: 20px; font-weight: 600; color: var(--accent); }
+
+  /* STATS ROW */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow); }
+  .stat-label { font-size: 11px; color: var(--text3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+  .stat-value { font-size: 21px; font-weight: 600; margin-top: 5px; font-family: var(--mono); }
+  .stat-value.green { color: var(--accent); }
+  .stat-value.red { color: var(--danger); }
+  .stat-value.blue { color: var(--info); }
+
+  /* SEARCH BAR */
+  .search-bar { display: flex; gap: 10px; margin-bottom: 16px; }
+  .search-bar input { flex: 1; }
+
+  /* BADGE */
+  .badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 20px; }
+  .badge-green { background: var(--accent-light); color: var(--accent-text); }
+  .badge-red { background: var(--danger-light); color: var(--danger); }
+  .badge-orange { background: var(--orange-light); color: var(--orange); }
+  .badge-gray { background: var(--surface2); color: var(--text2); }
+
+  /* REPORT TABLE */
+  .report-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .report-table th { text-align: left; padding: 10px 14px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text3); border-bottom: 1px solid var(--border); background: var(--surface2); }
+  .report-table td { padding: 13px 14px; border-bottom: 1px solid var(--border); }
+  .report-table tr:last-child td { border-bottom: none; }
+  .report-table tr.overdue td { background: #fff9f9; }
+  .report-table tfoot td { font-weight: 600; background: var(--surface2); border-top: 2px solid var(--border2); padding: 13px 14px; font-family: var(--mono); }
+
+  /* PROGRESS BAR */
+  .progress-wrap { background: var(--surface2); border-radius: 4px; height: 6px; margin-top: 4px; overflow: hidden; }
+  .progress-bar { height: 100%; border-radius: 4px; transition: width 0.3s; }
+  .progress-bar.green { background: var(--accent); }
+  .progress-bar.red { background: var(--danger); }
+  .progress-bar.orange { background: #e07820; }
+
+  /* CONFIG MODAL */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 200; }
+  .modal-overlay.hidden { display: none; }
+  .modal { background: var(--surface); border-radius: var(--radius-lg); padding: 28px; width: 480px; max-width: 95vw; box-shadow: var(--shadow-md); }
+  .modal h2 { font-size: 18px; font-weight: 600; margin-bottom: 6px; }
+  .modal p { font-size: 13px; color: var(--text2); margin-bottom: 20px; line-height: 1.7; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+  .modal code { background: var(--surface2); padding: 1px 5px; border-radius: 4px; font-family: var(--mono); font-size: 12px; }
+
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .icon-del { background: none; border: none; cursor: pointer; color: var(--text3); padding: 4px 8px; border-radius: 6px; font-size: 14px; }
+  .icon-del:hover { color: var(--danger); background: var(--danger-light); }
+
+  @media (max-width: 640px) {
+    nav { padding: 0 12px; }
+    main { padding: 16px 12px; }
+    .form-row, .form-row-3 { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .nav-tab { padding: 14px 10px; font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- CONFIG BANNER -->
+<div id="config-banner">
+  ⚠️ Supabase not configured. <a href="#" onclick="openConfig(); return false;">Click here to set up your database</a> — data will not save until configured.
+</div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-brand">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    CRM
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('customers', this)">Customers <span class="nav-badge" id="cx-count">0</span></button>
+    <button class="nav-tab" onclick="showPage('purchase', this)">New Purchase</button>
+    <button class="nav-tab" onclick="showPage('history', this)">Purchase History <span class="nav-badge" id="px-count">0</span></button>
+    <button class="nav-tab" onclick="showPage('payment', this)">Record Payment</button>
+    <button class="nav-tab" onclick="showPage('report', this)">Outstanding Report</button>
+  </div>
+  <button class="btn btn-ghost btn-sm" onclick="openConfig()" style="margin-left:auto; white-space:nowrap;">⚙ Config</button>
+</nav>
+
+<main>
+
+<!-- ═══════════════════════════════════════════════════════ CUSTOMERS -->
+<div class="page active" id="page-customers">
+  <div class="page-header"><h1>Customers</h1><p>Add customers — phone number must be unique.</p></div>
+  <div class="card">
+    <div class="card-title">Add new customer</div>
+    <div id="cx-alert" class="alert hidden"></div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Full name *</label>
+        <input type="text" id="cx-name" placeholder="e.g. Priya Kumar" autocomplete="off" />
+        <span class="field-error" id="cx-name-err">Name is required</span>
+      </div>
+      <div class="form-group">
+        <label>Phone number *</label>
+        <input type="tel" id="cx-phone" placeholder="e.g. 9876543210" autocomplete="off" />
+        <span class="field-error" id="cx-phone-err">Enter digits only (7–15 digits)</span>
+      </div>
+    </div>
+    <div style="margin-top:16px; display:flex; gap:10px;">
+      <button class="btn btn-primary" onclick="saveCustomer()" id="cx-save-btn">💾 Save customer</button>
+      <button class="btn btn-ghost" onclick="clearCxForm()">Clear</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Customer records</div>
+    <div class="search-bar"><input type="text" id="cx-search" placeholder="Search by name or phone…" oninput="renderCustomers()" /></div>
+    <div class="table-wrap">
+      <table><thead><tr><th>#</th><th>Name</th><th>Phone</th><th>Added</th><th></th></tr></thead>
+      <tbody id="cx-tbody"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ NEW PURCHASE -->
+<div class="page" id="page-purchase">
+  <div class="page-header"><h1>New purchase</h1><p>Select a customer and add line items.</p></div>
+  <div class="card">
+    <div class="card-title">Purchase details</div>
+    <div id="px-alert" class="alert hidden"></div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Customer *</label>
+        <select id="px-customer"><option value="">— select customer —</option></select>
+        <span class="field-error" id="px-cx-err">Please select a customer</span>
+      </div>
+      <div class="form-group">
+        <label>Purchase date *</label>
+        <input type="date" id="px-date" />
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Line items</div>
+    <table class="items-table">
+      <thead><tr><th style="width:40%">Description</th><th style="width:14%">Qty</th><th style="width:20%">Rate (₹)</th><th style="width:20%">Amount (₹)</th><th style="width:6%"></th></tr></thead>
+      <tbody id="items-tbody"></tbody>
+    </table>
+    <button class="btn btn-ghost btn-sm" onclick="addItem()" style="margin-top:8px;">+ Add item</button>
+    <div class="total-row">
+      <span class="total-label">Total amount</span>
+      <span class="total-value" id="grand-total">₹0.00</span>
+    </div>
+  </div>
+  <div style="display:flex; gap:10px;">
+    <button class="btn btn-primary" onclick="savePurchase()" id="px-save-btn">💾 Save purchase</button>
+    <button class="btn btn-ghost" onclick="resetPurchaseForm()">Clear</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ PURCHASE HISTORY -->
+<div class="page" id="page-history">
+  <div class="page-header"><h1>Purchase history</h1><p>All recorded purchases.</p></div>
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-label">Total purchases</div><div class="stat-value blue" id="stat-total-px">0</div></div>
+    <div class="stat-card"><div class="stat-label">Total billed</div><div class="stat-value green" id="stat-revenue">₹0</div></div>
+    <div class="stat-card"><div class="stat-label">Total received</div><div class="stat-value green" id="stat-received">₹0</div></div>
+    <div class="stat-card"><div class="stat-label">Outstanding</div><div class="stat-value red" id="stat-outstanding">₹0</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">All purchases</div>
+    <div class="search-bar">
+      <input type="text" id="px-search" placeholder="Search by customer or description…" oninput="renderHistory()" />
+      <select id="px-filter-cx" onchange="renderHistory()" style="width:220px;"><option value="">All customers</option></select>
+    </div>
+    <div class="table-wrap">
+      <table><thead><tr><th>Date</th><th>Customer</th><th>Items</th><th>Total (₹)</th><th></th></tr></thead>
+      <tbody id="px-tbody"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ RECORD PAYMENT -->
+<div class="page" id="page-payment">
+  <div class="page-header"><h1>Record payment</h1><p>Record a payment received from a customer in INR (₹).</p></div>
+  <div class="card">
+    <div class="card-title">Payment details</div>
+    <div id="pay-alert" class="alert hidden"></div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Customer *</label>
+        <select id="pay-customer" onchange="loadCustomerBalance()"><option value="">— select customer —</option></select>
+        <span class="field-error" id="pay-cx-err">Please select a customer</span>
+      </div>
+      <div class="form-group">
+        <label>Payment date *</label>
+        <input type="date" id="pay-date" />
+      </div>
+    </div>
+
+    <!-- Customer balance summary (shown after selecting customer) -->
+    <div id="pay-balance-box" style="display:none; margin-top:16px; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px;">
+      <div style="display:flex; gap:32px; flex-wrap:wrap;">
+        <div><div class="stat-label">Total purchased</div><div style="font-family:var(--mono); font-size:16px; font-weight:600; margin-top:3px;" id="pay-total-purchased">₹0.00</div></div>
+        <div><div class="stat-label">Total paid</div><div style="font-family:var(--mono); font-size:16px; font-weight:600; color:var(--accent); margin-top:3px;" id="pay-total-paid">₹0.00</div></div>
+        <div><div class="stat-label">Balance due</div><div style="font-family:var(--mono); font-size:16px; font-weight:600; color:var(--danger); margin-top:3px;" id="pay-balance-due">₹0.00</div></div>
+      </div>
+    </div>
+
+    <div class="form-row" style="margin-top:16px;">
+      <div class="form-group">
+        <label>Amount received (₹) *</label>
+        <div class="currency-wrap">
+          <span class="currency-prefix">₹</span>
+          <input type="number" id="pay-amount" min="0.01" step="0.01" placeholder="0.00" />
+        </div>
+        <span class="field-error" id="pay-amount-err">Enter a valid amount</span>
+      </div>
+      <div class="form-group">
+        <label>Payment method</label>
+        <select id="pay-method">
+          <option value="Cash">Cash</option>
+          <option value="UPI">UPI</option>
+          <option value="Bank Transfer">Bank Transfer</option>
+          <option value="Cheque">Cheque</option>
+          <option value="Card">Card</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group" style="margin-top:16px;">
+      <label>Reference / Note</label>
+      <input type="text" id="pay-note" placeholder="e.g. UPI ref no., cheque number, etc." />
+    </div>
+    <div style="margin-top:16px; display:flex; gap:10px;">
+      <button class="btn btn-primary" onclick="savePayment()" id="pay-save-btn">💰 Record payment</button>
+      <button class="btn btn-ghost" onclick="clearPaymentForm()">Clear</button>
+    </div>
+  </div>
+
+  <!-- Payment history for selected customer -->
+  <div class="card" id="pay-history-card" style="display:none;">
+    <div class="card-title" id="pay-history-title">Payment history</div>
+    <div class="table-wrap">
+      <table><thead><tr><th>Date</th><th>Amount (₹)</th><th>Method</th><th>Reference</th><th></th></tr></thead>
+      <tbody id="pay-tbody"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ OUTSTANDING REPORT -->
+<div class="page" id="page-report">
+  <div class="page-header"><h1>Outstanding report</h1><p>Balance due per customer — total purchases minus payments received.</p></div>
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-label">Total billed</div><div class="stat-value blue" id="rpt-total-billed">₹0</div></div>
+    <div class="stat-card"><div class="stat-label">Total received</div><div class="stat-value green" id="rpt-total-received">₹0</div></div>
+    <div class="stat-card"><div class="stat-label">Total outstanding</div><div class="stat-value red" id="rpt-total-outstanding">₹0</div></div>
+    <div class="stat-card"><div class="stat-label">Customers with dues</div><div class="stat-value red" id="rpt-cx-owing">0</div></div>
+  </div>
+  <div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+      <div class="card-title" style="margin-bottom:0;">Customer-wise balance</div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <select id="rpt-filter" onchange="renderReport()" style="width:160px; font-size:13px; padding:7px 10px;">
+          <option value="all">All customers</option>
+          <option value="owing">With balance due</option>
+          <option value="clear">Fully paid</option>
+        </select>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Customer</th>
+            <th style="text-align:right">Total billed (₹)</th>
+            <th style="text-align:right">Paid (₹)</th>
+            <th style="text-align:right">Balance due (₹)</th>
+            <th>Payment status</th>
+          </tr>
+        </thead>
+        <tbody id="rpt-tbody"></tbody>
+        <tfoot id="rpt-tfoot"></tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<!-- CONFIG MODAL -->
+<div class="modal-overlay hidden" id="config-modal">
+  <div class="modal">
+    <h2>Supabase configuration</h2>
+    <p>
+      This app uses <strong>Supabase</strong> (free PostgreSQL) as the database.<br><br>
+      1. Go to <a href="https://supabase.com" target="_blank" style="color:var(--accent)">supabase.com</a> → create a free project<br>
+      2. Go to <strong>SQL Editor</strong> and run the SQL in <code>setup.sql</code><br>
+      3. Go to <strong>Settings → API</strong> and copy your Project URL and anon key below
+    </p>
+    <div class="form-group" style="margin-bottom:12px;">
+      <label>Supabase Project URL</label>
+      <input type="text" id="cfg-url" placeholder="https://xxxx.supabase.co" />
+    </div>
+    <div class="form-group">
+      <label>Supabase Anon Key</label>
+      <input type="text" id="cfg-key" placeholder="eyJ..." />
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeConfig()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveConfig()">Save & connect</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ───────────────────────────────────────────────────────────
+let SUPABASE_URL = localStorage.getItem('sb_url') || '';
+let SUPABASE_KEY = localStorage.getItem('sb_key') || '';
+function sbH() { return { 'Content-Type':'application/json', 'apikey': SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY }; }
+function isConfigured() { return !!(SUPABASE_URL && SUPABASE_KEY); }
+function openConfig() { document.getElementById('config-modal').classList.remove('hidden'); }
+function closeConfig() { document.getElementById('config-modal').classList.add('hidden'); }
+function saveConfig() {
+  SUPABASE_URL = document.getElementById('cfg-url').value.trim().replace(/\/$/,'');
+  SUPABASE_KEY = document.getElementById('cfg-key').value.trim();
+  localStorage.setItem('sb_url', SUPABASE_URL);
+  localStorage.setItem('sb_key', SUPABASE_KEY);
+  closeConfig(); checkConfig(); loadAll();
+}
+function checkConfig() { document.getElementById('config-banner').classList.toggle('hidden', isConfigured()); }
+
+// ── NAVIGATION ───────────────────────────────────────────────────────
+function showPage(page, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  btn.classList.add('active');
+  if (page === 'purchase') populateCxDropdowns();
+  if (page === 'payment') { populateCxDropdowns(); clearPaymentForm(); }
+  if (page === 'history') { populateCxDropdowns(); renderHistory(); updateStats(); }
+  if (page === 'report') { renderReport(); updateReportStats(); }
+}
+
+// ── SUPABASE REST ────────────────────────────────────────────────────
+async function sbGet(table, params='') {
+  if (!isConfigured()) return [];
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`, { headers: sbH() });
+    return r.ok ? await r.json() : [];
+  } catch { return []; }
+}
+async function sbInsert(table, data) {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+    method:'POST', headers:{...sbH(),'Prefer':'return=representation'}, body: JSON.stringify(data)
+  });
+  const b = await r.json();
+  if (!r.ok) throw new Error(b.message || b.details || 'Insert failed');
+  return b;
+}
+async function sbDelete(table, id) {
+  await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, { method:'DELETE', headers: sbH() });
+}
+
+// ── STATE ────────────────────────────────────────────────────────────
+let customers = [], purchases = [], purchaseItems = [], payments = [];
+
+async function loadAll() {
+  if (!isConfigured()) return;
+  [customers, purchases, purchaseItems, payments] = await Promise.all([
+    sbGet('customers','order=created_at.desc'),
+    sbGet('purchases','order=purchase_date.desc'),
+    sbGet('purchase_items',''),
+    sbGet('payments','order=payment_date.desc')
+  ]);
+  renderCustomers(); updateCounts(); populateCxDropdowns();
+}
+
+// ── CUSTOMERS ────────────────────────────────────────────────────────
+function renderCustomers() {
+  const q = document.getElementById('cx-search').value.toLowerCase();
+  const rows = customers.filter(c => c.name.toLowerCase().includes(q) || c.phone.includes(q));
+  const tbody = document.getElementById('cx-tbody');
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><p>${customers.length?'No matches.':'No customers added yet.'}</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map((c,i) => `<tr>
+    <td class="mono" style="color:var(--text3)">${i+1}</td>
+    <td><strong>${esc(c.name)}</strong></td>
+    <td class="mono">${esc(c.phone)}</td>
+    <td style="color:var(--text3);font-size:13px;">${fmtDate(c.created_at)}</td>
+    <td><button class="btn btn-danger-ghost btn-sm" onclick="deleteCustomer('${c.id}')">Delete</button></td>
+  </tr>`).join('');
+}
+
+async function saveCustomer() {
+  const name = document.getElementById('cx-name').value.trim();
+  const phone = document.getElementById('cx-phone').value.trim().replace(/\s+/g,'');
+  let valid = true;
+  document.getElementById('cx-name-err').classList.remove('show');
+  document.getElementById('cx-phone-err').classList.remove('show');
+  if (!name) { document.getElementById('cx-name-err').classList.add('show'); valid=false; }
+  if (!phone || !/^\d{7,15}$/.test(phone)) { document.getElementById('cx-phone-err').classList.add('show'); valid=false; }
+  if (!valid) return;
+  if (!isConfigured()) { showAlert('cx-alert','Configure Supabase first.','error'); return; }
+  const btn = document.getElementById('cx-save-btn');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Saving…';
+  try {
+    const res = await sbInsert('customers',{name,phone});
+    customers.unshift(res[0]);
+    showAlert('cx-alert',`${name} saved!`,'success');
+    clearCxForm(); renderCustomers(); updateCounts(); populateCxDropdowns();
+  } catch(e) {
+    showAlert('cx-alert', e.message.includes('unique')||e.message.includes('duplicate') ? 'This phone number already exists.' : e.message, 'error');
+  } finally { btn.disabled=false; btn.innerHTML='💾 Save customer'; }
+}
+async function deleteCustomer(id) {
+  if (!confirm('Delete this customer and all their data?')) return;
+  await sbDelete('customers',id);
+  customers=customers.filter(c=>c.id!==id);
+  purchases=purchases.filter(p=>p.customer_id!==id);
+  payments=payments.filter(p=>p.customer_id!==id);
+  renderCustomers(); updateCounts();
+}
+function clearCxForm() { document.getElementById('cx-name').value=''; document.getElementById('cx-phone').value=''; }
+
+// ── PURCHASE FORM ────────────────────────────────────────────────────
+let itemCounter = 0;
+function addItem() {
+  itemCounter++;
+  const id='item-'+itemCounter;
+  const tr=document.createElement('tr'); tr.id=id;
+  tr.innerHTML=`
+    <td><input type="text" placeholder="Description" class="desc" oninput="calcRow('${id}')" /></td>
+    <td><input type="number" placeholder="1" min="1" class="qty" value="1" oninput="calcRow('${id}')" /></td>
+    <td><input type="number" placeholder="0.00" min="0" step="0.01" class="rate" oninput="calcRow('${id}')" /></td>
+    <td><input type="number" class="amt" readonly style="background:var(--surface2);color:var(--text2);" /></td>
+    <td><button class="icon-del" onclick="removeItem('${id}')">✕</button></td>`;
+  document.getElementById('items-tbody').appendChild(tr);
+}
+function calcRow(id) {
+  const tr=document.getElementById(id); if(!tr) return;
+  const qty=parseFloat(tr.querySelector('.qty').value)||0;
+  const rate=parseFloat(tr.querySelector('.rate').value)||0;
+  tr.querySelector('.amt').value=(qty*rate).toFixed(2); calcTotal();
+}
+function calcTotal() {
+  let t=0; document.querySelectorAll('#items-tbody .amt').forEach(e=>t+=parseFloat(e.value)||0);
+  document.getElementById('grand-total').textContent='₹'+t.toFixed(2);
+}
+function removeItem(id) { document.getElementById(id)?.remove(); calcTotal(); }
+function resetPurchaseForm() {
+  document.getElementById('px-customer').value='';
+  document.getElementById('px-date').value='';
+  document.getElementById('items-tbody').innerHTML='';
+  itemCounter=0; calcTotal();
+}
+async function savePurchase() {
+  const cxId=document.getElementById('px-customer').value;
+  const date=document.getElementById('px-date').value;
+  document.getElementById('px-cx-err').classList.remove('show');
+  if (!cxId) { document.getElementById('px-cx-err').classList.add('show'); return; }
+  if (!date) { showAlert('px-alert','Please select a purchase date.','error'); return; }
+  const rows=[...document.querySelectorAll('#items-tbody tr')].map(tr=>({
+    description:tr.querySelector('.desc')?.value.trim(),
+    qty:parseFloat(tr.querySelector('.qty')?.value)||0,
+    rate:parseFloat(tr.querySelector('.rate')?.value)||0,
+    amount:parseFloat(tr.querySelector('.amt')?.value)||0
+  })).filter(r=>r.description&&r.qty>0&&r.rate>0);
+  if (!rows.length) { showAlert('px-alert','Add at least one valid line item.','error'); return; }
+  if (!isConfigured()) { showAlert('px-alert','Configure Supabase first.','error'); return; }
+  const total=rows.reduce((s,r)=>s+r.amount,0);
+  const btn=document.getElementById('px-save-btn');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Saving…';
+  try {
+    const [p]=await sbInsert('purchases',{customer_id:cxId,purchase_date:date,total_amount:total});
+    await sbInsert('purchase_items',rows.map(r=>({...r,purchase_id:p.id})));
+    purchases.unshift(p); purchaseItems.push(...rows.map(r=>({...r,purchase_id:p.id})));
+    showAlert('px-alert','Purchase saved!','success');
+    resetPurchaseForm(); updateCounts();
+  } catch(e) { showAlert('px-alert','Error: '+e.message,'error'); }
+  finally { btn.disabled=false; btn.innerHTML='💾 Save purchase'; }
+}
+
+// ── HISTORY ──────────────────────────────────────────────────────────
+function renderHistory() {
+  const q=document.getElementById('px-search').value.toLowerCase();
+  const cxF=document.getElementById('px-filter-cx').value;
+  const rows=purchases.filter(p=>{
+    const cx=customers.find(c=>c.id===p.customer_id);
+    if (cxF && p.customer_id!==cxF) return false;
+    const items=purchaseItems.filter(i=>i.purchase_id===p.id);
+    return (cx?.name||'').toLowerCase().includes(q)||items.map(i=>i.description).join(' ').toLowerCase().includes(q);
+  });
+  const tbody=document.getElementById('px-tbody');
+  if (!rows.length) { tbody.innerHTML=`<tr><td colspan="5"><div class="empty"><p>${purchases.length?'No matches.':'No purchases yet.'}</p></div></td></tr>`; return; }
+  tbody.innerHTML=rows.map(p=>{
+    const cx=customers.find(c=>c.id===p.customer_id);
+    const items=purchaseItems.filter(i=>i.purchase_id===p.id);
+    return `<tr>
+      <td style="font-size:13px;color:var(--text2);">${p.purchase_date}</td>
+      <td><strong>${esc(cx?.name||'Unknown')}</strong><br><span style="font-size:12px;color:var(--text3)">${esc(cx?.phone||'')}</span></td>
+      <td style="font-size:13px;">${items.map(i=>`${esc(i.description)} ×${i.qty}`).join('<br>')}</td>
+      <td class="mono" style="font-weight:600;color:var(--accent);">₹${fmtNum(p.total_amount)}</td>
+      <td><button class="btn btn-danger-ghost btn-sm" onclick="deletePurchase('${p.id}')">Delete</button></td>
+    </tr>`;
+  }).join('');
+}
+async function deletePurchase(id) {
+  if (!confirm('Delete this purchase?')) return;
+  await sbDelete('purchases',id);
+  purchases=purchases.filter(p=>p.id!==id);
+  purchaseItems=purchaseItems.filter(i=>i.purchase_id!==id);
+  renderHistory(); updateCounts();
+}
+
+// ── PAYMENT ──────────────────────────────────────────────────────────
+function loadCustomerBalance() {
+  const cxId=document.getElementById('pay-customer').value;
+  const box=document.getElementById('pay-balance-box');
+  const histCard=document.getElementById('pay-history-card');
+  if (!cxId) { box.style.display='none'; histCard.style.display='none'; return; }
+  const totalPurchased=purchases.filter(p=>p.customer_id===cxId).reduce((s,p)=>s+parseFloat(p.total_amount||0),0);
+  const totalPaid=payments.filter(p=>p.customer_id===cxId).reduce((s,p)=>s+parseFloat(p.amount||0),0);
+  const balance=totalPurchased-totalPaid;
+  document.getElementById('pay-total-purchased').textContent='₹'+fmtNum(totalPurchased);
+  document.getElementById('pay-total-paid').textContent='₹'+fmtNum(totalPaid);
+  document.getElementById('pay-balance-due').textContent='₹'+fmtNum(balance);
+  box.style.display='block';
+  // render payment history for this customer
+  const cx=customers.find(c=>c.id===cxId);
+  document.getElementById('pay-history-title').textContent=`Payment history — ${cx?.name||''}`;
+  const cxPays=payments.filter(p=>p.customer_id===cxId);
+  const tbody=document.getElementById('pay-tbody');
+  if (!cxPays.length) {
+    tbody.innerHTML=`<tr><td colspan="5"><div class="empty" style="padding:24px 0;"><p>No payments recorded for this customer yet.</p></div></td></tr>`;
+  } else {
+    tbody.innerHTML=cxPays.map(p=>`<tr>
+      <td style="font-size:13px;">${p.payment_date}</td>
+      <td class="mono" style="font-weight:600;color:var(--accent);">₹${fmtNum(p.amount)}</td>
+      <td><span class="badge badge-gray">${esc(p.method||'')}</span></td>
+      <td style="font-size:13px;color:var(--text2);">${esc(p.note||'—')}</td>
+      <td><button class="btn btn-danger-ghost btn-sm" onclick="deletePayment('${p.id}')">Delete</button></td>
+    </tr>`).join('');
+  }
+  histCard.style.display='block';
+}
+
+async function savePayment() {
+  const cxId=document.getElementById('pay-customer').value;
+  const date=document.getElementById('pay-date').value;
+  const amount=parseFloat(document.getElementById('pay-amount').value);
+  const method=document.getElementById('pay-method').value;
+  const note=document.getElementById('pay-note').value.trim();
+  document.getElementById('pay-cx-err').classList.remove('show');
+  document.getElementById('pay-amount-err').classList.remove('show');
+  let valid=true;
+  if (!cxId) { document.getElementById('pay-cx-err').classList.add('show'); valid=false; }
+  if (!amount || amount<=0) { document.getElementById('pay-amount-err').classList.add('show'); valid=false; }
+  if (!valid) return;
+  if (!date) { showAlert('pay-alert','Please select a payment date.','error'); return; }
+  if (!isConfigured()) { showAlert('pay-alert','Configure Supabase first.','error'); return; }
+  const btn=document.getElementById('pay-save-btn');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Saving…';
+  try {
+    const [pay]=await sbInsert('payments',{customer_id:cxId,payment_date:date,amount,method,note});
+    payments.unshift(pay);
+    showAlert('pay-alert','Payment of ₹'+fmtNum(amount)+' recorded!','success');
+    document.getElementById('pay-amount').value='';
+    document.getElementById('pay-note').value='';
+    loadCustomerBalance();
+    updateCounts();
+  } catch(e) { showAlert('pay-alert','Error: '+e.message,'error'); }
+  finally { btn.disabled=false; btn.innerHTML='💰 Record payment'; }
+}
+
+async function deletePayment(id) {
+  if (!confirm('Delete this payment record?')) return;
+  await sbDelete('payments',id);
+  payments=payments.filter(p=>p.id!==id);
+  loadCustomerBalance(); updateCounts();
+}
+
+function clearPaymentForm() {
+  document.getElementById('pay-customer').value='';
+  document.getElementById('pay-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('pay-amount').value='';
+  document.getElementById('pay-note').value='';
+  document.getElementById('pay-balance-box').style.display='none';
+  document.getElementById('pay-history-card').style.display='none';
+}
+
+// ── REPORT ───────────────────────────────────────────────────────────
+function renderReport() {
+  const filter=document.getElementById('rpt-filter').value;
+  const tbody=document.getElementById('rpt-tbody');
+  const tfoot=document.getElementById('rpt-tfoot');
+
+  // Build per-customer summary
+  const rows=customers.map(c=>{
+    const billed=purchases.filter(p=>p.customer_id===c.id).reduce((s,p)=>s+parseFloat(p.total_amount||0),0);
+    const paid=payments.filter(p=>p.customer_id===c.id).reduce((s,p)=>s+parseFloat(p.amount||0),0);
+    const balance=billed-paid;
+    return {c, billed, paid, balance};
+  }).filter(r=>r.billed>0||r.paid>0); // only customers with any activity
+
+  const filtered=rows.filter(r=>{
+    if (filter==='owing') return r.balance>0.01;
+    if (filter==='clear') return r.balance<=0.01;
+    return true;
+  });
+
+  if (!filtered.length) {
+    tbody.innerHTML=`<tr><td colspan="5"><div class="empty"><p>${rows.length?'No matches for this filter.':'No purchase or payment data yet.'}</p></div></td></tr>`;
+    tfoot.innerHTML=''; return;
+  }
+
+  tbody.innerHTML=filtered.map(({c,billed,paid,balance})=>{
+    const pct=billed>0?Math.min(100,Math.round(paid/billed*100)):0;
+    let badgeHtml='';
+    if (balance<=0) badgeHtml='<span class="badge badge-green">Fully paid</span>';
+    else if (pct>=50) badgeHtml='<span class="badge badge-orange">Partial</span>';
+    else badgeHtml='<span class="badge badge-red">Outstanding</span>';
+    const barColor=balance<=0?'green':pct>=50?'orange':'red';
+    return `<tr class="${balance>0?'':''}">
+      <td>
+        <strong>${esc(c.name)}</strong>
+        <div style="font-size:12px;color:var(--text3);">${esc(c.phone)}</div>
+      </td>
+      <td style="text-align:right;" class="mono">₹${fmtNum(billed)}</td>
+      <td style="text-align:right;" class="mono" style="color:var(--accent);">₹${fmtNum(paid)}</td>
+      <td style="text-align:right;" class="mono" style="${balance>0?'color:var(--danger);font-weight:600;':'color:var(--accent);'}">
+        ${balance>0?'₹'+fmtNum(balance):'<span style="color:var(--accent);">Nil</span>'}
+      </td>
+      <td>
+        ${badgeHtml}
+        <div class="progress-wrap" style="max-width:120px;margin-top:6px;">
+          <div class="progress-bar ${barColor}" style="width:${pct}%"></div>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px;">${pct}% paid</div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  const totBilled=filtered.reduce((s,r)=>s+r.billed,0);
+  const totPaid=filtered.reduce((s,r)=>s+r.paid,0);
+  const totBal=filtered.reduce((s,r)=>s+Math.max(0,r.balance),0);
+  tfoot.innerHTML=`<tr>
+    <td>Total (${filtered.length} customer${filtered.length!==1?'s':''})</td>
+    <td style="text-align:right;">₹${fmtNum(totBilled)}</td>
+    <td style="text-align:right;">₹${fmtNum(totPaid)}</td>
+    <td style="text-align:right;color:var(--danger);">₹${fmtNum(totBal)}</td>
+    <td></td>
+  </tr>`;
+}
+
+function updateReportStats() {
+  const allCx=customers.map(c=>({
+    billed:purchases.filter(p=>p.customer_id===c.id).reduce((s,p)=>s+parseFloat(p.total_amount||0),0),
+    paid:payments.filter(p=>p.customer_id===c.id).reduce((s,p)=>s+parseFloat(p.amount||0),0)
+  })).filter(r=>r.billed>0||r.paid>0);
+  const totBilled=allCx.reduce((s,r)=>s+r.billed,0);
+  const totPaid=allCx.reduce((s,r)=>s+r.paid,0);
+  const totOut=allCx.reduce((s,r)=>s+Math.max(0,r.billed-r.paid),0);
+  const cxOwing=allCx.filter(r=>(r.billed-r.paid)>0.01).length;
+  document.getElementById('rpt-total-billed').textContent='₹'+fmtNum(totBilled);
+  document.getElementById('rpt-total-received').textContent='₹'+fmtNum(totPaid);
+  document.getElementById('rpt-total-outstanding').textContent='₹'+fmtNum(totOut);
+  document.getElementById('rpt-cx-owing').textContent=cxOwing;
+}
+
+// ── SHARED ───────────────────────────────────────────────────────────
+function updateStats() {
+  const totBilled=purchases.reduce((s,p)=>s+parseFloat(p.total_amount||0),0);
+  const totPaid=payments.reduce((s,p)=>s+parseFloat(p.amount||0),0);
+  document.getElementById('stat-total-px').textContent=purchases.length;
+  document.getElementById('stat-revenue').textContent='₹'+fmtNum(totBilled);
+  document.getElementById('stat-received').textContent='₹'+fmtNum(totPaid);
+  document.getElementById('stat-outstanding').textContent='₹'+fmtNum(Math.max(0,totBilled-totPaid));
+}
+function updateCounts() {
+  document.getElementById('cx-count').textContent=customers.length;
+  document.getElementById('px-count').textContent=purchases.length;
+  updateStats(); updateReportStats();
+}
+function populateCxDropdowns() {
+  const opts=customers.map(c=>`<option value="${c.id}">${esc(c.name)} — ${esc(c.phone)}</option>`).join('');
+  ['px-customer','pay-customer','px-filter-cx'].forEach(id=>{
+    const el=document.getElementById(id);
+    if (!el) return;
+    const isFilter=id==='px-filter-cx';
+    el.innerHTML=(isFilter?'<option value="">All customers</option>':'<option value="">— select customer —</option>')+opts;
+  });
+}
+
+// ── HELPERS ──────────────────────────────────────────────────────────
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmtDate(d) { return d?new Date(d).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}):''; }
+function fmtNum(n) { return parseFloat(n||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function showAlert(id,msg,type) {
+  const el=document.getElementById(id);
+  el.textContent=msg; el.className='alert alert-'+type; el.classList.remove('hidden');
+  setTimeout(()=>el.classList.add('hidden'),4000);
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────
+document.getElementById('cfg-url').value=SUPABASE_URL;
+document.getElementById('cfg-key').value=SUPABASE_KEY;
+document.getElementById('px-date').value=new Date().toISOString().split('T')[0];
+document.getElementById('pay-date').value=new Date().toISOString().split('T')[0];
+checkConfig(); addItem(); loadAll();
+</script>
+</body>
+</html>
