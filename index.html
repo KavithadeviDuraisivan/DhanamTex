@@ -420,8 +420,11 @@
 
 <script>
 // ── CONFIG ───────────────────────────────────────────────────────────
-let SUPABASE_URL = localStorage.getItem('sb_url') || '';
-let SUPABASE_KEY = localStorage.getItem('sb_key') || '';
+//let SUPABASE_URL = localStorage.getItem('sb_url') || '';
+//let SUPABASE_KEY = localStorage.getItem('sb_key') || '';
+let SUPABASE_URL = "https://hlagokrhnbhorihszawh.supabase.co";
+let SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhsYWdva3JobmJob3JpaHN6YXdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1OTAyMzEsImV4cCI6MjA5NTE2NjIzMX0.deQ2PuKZJ_1AbLHf5WNIVTS3HML7Z6cVist270PbbwQ";
+ 
 function sbH() { return { 'Content-Type':'application/json', 'apikey': SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY }; }
 function isConfigured() { return !!(SUPABASE_URL && SUPABASE_KEY); }
 function openConfig() { document.getElementById('config-modal').classList.remove('hidden'); }
